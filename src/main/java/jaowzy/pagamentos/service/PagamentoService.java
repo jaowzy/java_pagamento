@@ -2,6 +2,7 @@ package jaowzy.pagamentos.service;
 
 import jakarta.persistence.EntityNotFoundException;
 import jaowzy.pagamentos.dto.PagamentoDTO;
+import jaowzy.pagamentos.http.PedidoClient;
 import jaowzy.pagamentos.model.Pagamento;
 import jaowzy.pagamentos.model.Status;
 import jaowzy.pagamentos.repository.PagamentoRepository;
@@ -11,6 +12,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class PagamentoService {
 
@@ -19,6 +22,9 @@ public class PagamentoService {
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private PedidoClient pedido;
 
     public Page<PagamentoDTO> obterTodos(Pageable paginacao){
         return repository
@@ -50,5 +56,28 @@ public class PagamentoService {
 
     public void excluirPagamento(Long id){
         repository.deleteById(id);
+    }
+
+    public void confirmarPagamento(Long id){
+        Optional<Pagamento> pagamento = repository.findById(id);
+
+        if (!pagamento.isPresent()){
+            throw new EntityNotFoundException();
+        }
+
+        pagamento.get().setStatus(Status.CONFIRMADO);
+        repository.save(pagamento.get());
+        pedido.atualizaPagamento(pagamento.get().getPedidoId());
+    }
+
+    public void alteraStatus(Long id) {
+        Optional<Pagamento> pagamento = repository.findById(id);
+
+        if (!pagamento.isPresent()){
+            throw new EntityNotFoundException();
+        }
+
+        pagamento.get().setStatus(Status.CONFIRMADO_SEM_INTEGRACAO);
+        repository.save(pagamento.get());
     }
 }
